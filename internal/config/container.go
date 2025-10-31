@@ -10,10 +10,12 @@ import (
 type AppEnv struct {
 	DatabaseUrl string
 	Port        string
+	JwtSecret   string
 }
 
 type AppContainer struct {
 	Dbpool *pgxpool.Pool
+	Env    *AppEnv
 }
 
 func NewAppContainer(env *AppEnv) *AppContainer {
@@ -30,5 +32,6 @@ func NewAppContainer(env *AppEnv) *AppContainer {
 
 	return &AppContainer{
 		Dbpool: dbpool,
+		Env:    env,
 	}
 }

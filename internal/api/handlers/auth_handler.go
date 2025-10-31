@@ -1,13 +1,17 @@
 package handlers
 
 import (
+	"context"
+	"fmt"
 	"github.com/gin-gonic/gin"
 	"microservices-mvp/internal/api"
 	"microservices-mvp/internal/config"
+	"microservices-mvp/internal/service"
 )
 
 type AuthHandler struct {
-	app *config.AppContainer
+	app         *config.AppContainer
+	authService *service.AuthService
 }
 
 type AuthUserRequest struct {
@@ -22,8 +26,10 @@ type AuthUserRequest struct {
 // В структуру передаем зависимости логгер, бд и прочие
 
 func NewAuthHanlder(app *config.AppContainer) *AuthHandler {
+	authService := service.NewAuthService(app.Env)
 	return &AuthHandler{
-		app: app,
+		app,
+		authService,
 	}
 }
 
@@ -40,19 +46,26 @@ func (h *AuthHandler) RegisterUser(c *gin.Context) {
 		return
 	}
 
-	// это нужно изменить, накидал быстро для доработки
-	var result string
-	rows, err := h.app.Dbpool.Query("insert into users (email, username, password) values ($1, $2, $3)", req.Username, req.Password, req.Username)
+	var newUserId int64
+	err := h.app.Dbpool.QueryRow(context.Background(), "insert into users (email, username, password) values ($1, $2, $3) returning id", req.Email, req.Username, req.Password).Scan(&newUserId)
 
-	for rows.Next() {
-		err := rows.Scan(&result)
+	if err != nil {
+		fmt.Println("db error: %w", err)
+		api.RespondBadRequest(c, err)
+		return
 	}
 
-	if rows.Err() != nil {
+	token, err := h.authService.GenerateJWToken(newUserId)
 
+	if err != nil {
+		fmt.Printf("jwt error: %v\n", err)
+		api.RespondBadRequest(c, err.Error())
+		return
 	}
 
-	api.RespondSuccess(c, nil)
+	api.RespondSuccess(c, gin.H{
+		"token": token,
+	})
 }
 
 func (h *AuthHandler) AuthUser(c *gin.Context) {

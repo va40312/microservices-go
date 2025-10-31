@@ -18,6 +18,7 @@ func main() {
 	env := &config.AppEnv{
 		DatabaseUrl: os.Getenv("DATABASE_URL"),
 		Port:        os.Getenv("PORT"),
+		JwtSecret:   os.Getenv("JWT_SECRET"),
 	}
 
 	app := config.NewAppContainer(env)
