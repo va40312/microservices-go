@@ -59,7 +59,10 @@ func main() {
 			panic("An unexpected error happen!")
 		})
 
-		apiV1.GET("/users", func(c *gin.Context) {
+		apiV1Protected := apiV1.Group("/")
+		apiV1Protected.Use(middleware.RequireAuth(env.JwtSecret))
+
+		apiV1Protected.GET("/users", func(c *gin.Context) {
 			rows, err := app.Dbpool.Query(c.Request.Context(), "select email,username from users")
 			if err != nil {
 				c.JSON(http.StatusInternalServerError, gin.H{"message": fmt.Sprintf("Query failed: %w", err)})

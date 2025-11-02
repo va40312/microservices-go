@@ -3,7 +3,6 @@ package handlers
 import (
 	"errors"
 	"fmt"
-	"io"
 	"microservice-example/internal/api"
 	"microservice-example/internal/container"
 	"microservice-example/internal/repoerror"
@@ -20,11 +19,16 @@ type AuthHandler struct {
 	authService *service.AuthService
 }
 
-type AuthUserRequest struct {
+type RegisterUserRequest struct {
 	// в gin встроена валидация
 	Email    string `json:"email" binding:"required,email"`
 	Username string `json:"username" binding:"required,min=3"`
 	Password string `json:"password" binding:"required,min=8"`
+}
+
+type AuthUserRequest struct {
+	Email    string `json:"email" binding:"required,email"`
+	Password string `json:"password" binding:"required"`
 }
 
 // Конструктор для структуры AuthHandler
@@ -40,21 +44,8 @@ func NewAuthHanlder(app *container.AppContainer) *AuthHandler {
 }
 
 func (h *AuthHandler) RegisterUser(c *gin.Context) {
-	var req AuthUserRequest
-	if err := c.ShouldBindJSON(&req); err != nil {
-		if err == io.EOF {
-			// Если тело запроса просто пустое
-			api.RespondBadRequest(c, "Request body is empty")
-			return
-		}
-
-		apiErrors := api.ValidationErrorToAPIErrors(err)
-		if apiErrors != nil {
-			// Используем хелпер!
-			api.RespondBadRequest(c, apiErrors)
-			return
-		}
-		api.RespondBadRequest(c, err.Error())
+	var req RegisterUserRequest
+	if !api.BindJSONAndValidate(c, &req) {
 		return
 	}
 
@@ -100,5 +91,39 @@ func (h *AuthHandler) RegisterUser(c *gin.Context) {
 }
 
 func (h *AuthHandler) AuthUser(c *gin.Context) {
-	api.RespondSuccess(c, nil)
+	var req AuthUserRequest
+
+	if !api.BindJSONAndValidate(c, &req) {
+		return
+	}
+
+	foundUser := struct {
+		Id       int64
+		Username string
+		Password string
+	}{}
+	err := h.app.Dbpool.QueryRow(c.Request.Context(), "select id, username, password from users where email=$1", req.Email).Scan(&foundUser.Id, &foundUser.Username, &foundUser.Password)
+
+	if err != nil {
+		api.RespondError(c, http.StatusUnauthorized, "Invalid email or password", err.Error())
+		return
+	}
+
+	err = bcrypt.CompareHashAndPassword([]byte(foundUser.Password), []byte(req.Password))
+
+	if err != nil {
+		api.RespondError(c, http.StatusUnauthorized, "Invalid email or password", err.Error())
+		return
+	}
+
+	token, err := h.authService.GenerateJWToken(foundUser.Id)
+
+	if err != nil {
+		api.RespondError(c, http.StatusInternalServerError, "Cannot create jwt", err.Error())
+		return
+	}
+
+	api.RespondSuccess(c, gin.H{
+		"token": token,
+	})
 }
