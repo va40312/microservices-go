@@ -1,8 +1,6 @@
 module microservice-example
 
-go 1.23
-
-toolchain go1.24.3
+go 1.18
 
 require (
 	github.com/gin-gonic/gin v1.10.1
