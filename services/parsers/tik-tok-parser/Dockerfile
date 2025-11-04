@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Устанавливаем движки для Playwright (необходимы для TikTokApi)
-RUN python -m playwright install
+RUN python -m playwright install chromium
 
 # Копируем исходный код нашего приложения
 COPY src/ ./src/
