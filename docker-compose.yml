@@ -3,27 +3,111 @@ version: '3.8'
 
 # Здесь мы описываем все сервисы (контейнеры), которые составляют наше приложение
 services:
-  # Название нашего сервиса с базой данных
-  db:
-    # Используем официальный образ PostgreSQL версии 14
-    image: postgres:17
-    # Имя контейнера, чтобы было легко к нему обращаться
-    container_name: my_postgres_db
-    # Всегда перезапускать контейнер, если он упал
+  kafka:
+    image: confluentinc/cp-kafka:8.1.0 # Образ Kafka должен соответствовать Zookeeper
+    container_name: kafka
     restart: always
-    # Переменные окружения, необходимые для инициализации Postgres
+    ports:
+      # Этот порт нужен, чтобы мы могли подключаться к Kafka с нашего компьютера (снаружи Docker)
+      - "9092:9092"
     environment:
-      POSTGRES_USER: myuser            # Создаем пользователя с именем 'myuser'
-      POSTGRES_PASSWORD: mysecretpassword # Устанавливаем ему пароль
-      POSTGRES_DB: user_service_db      # Сразу создаем базу данных с нужным именем
-    # Пробрасываем порт, чтобы мы могли подключаться к БД с нашего компьютера (например, через DBeaver)
+      # --- KRaft-специфичные настройки ---
+      KAFKA_PROCESS_ROLES: 'broker,controller'
+      KAFKA_NODE_ID: 1
+      KAFKA_CONTROLLER_QUORUM_VOTERS: '1@kafka:9093'
+      KAFKA_CONTROLLER_LISTENER_NAMES: 'CONTROLLER'
+
+      # --- Полная и правильная настройка сети ---
+      KAFKA_LISTENERS: 'INTERNAL://:29092,EXTERNAL://:9092,CONTROLLER://:9093'
+      KAFKA_ADVERTISED_LISTENERS: 'INTERNAL://kafka:29092,EXTERNAL://localhost:9092'
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: 'CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT'
+      KAFKA_INTER_BROKER_LISTENER_NAME: 'INTERNAL'
+
+      # --- Прочие настройки для одного узла ---
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - media_monitoring_net
+  kafka-setup:
+    image: confluentinc/cp-kafka:8.1.0
+    container_name: kafka-setup
+    depends_on:
+      - kafka
+    command: >
+      bash -c "
+        echo 'Ожидание, пока брокер Kafka станет доступен...'
+        while ! kafka-topics --list --bootstrap-server kafka:29092 > /dev/null 2>&1; do
+          sleep 1
+        done
+        echo 'Kafka готова к работе!'
+        kafka-topics --create --if-not-exists --topic social_media_content --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
+        echo 'Топик social_media_content успешно создан или уже существует.'
+      "
+    networks:
+      - media_monitoring_net
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    depends_on:
+      - kafka
+    ports:
+      - "8080:8080" # Мы будем заходить на него через localhost:8080
+    environment:
+      KAFKA_CLUSTERS_0_NAME: local-kafka-cluster
+      # Вот так UI найдет твою Kafka внутри Docker-сети
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
+    networks:
+      - media_monitoring_net
+
+  # --------------------------------------------------------------------
+  # Сервис вашего парсера на Python
+  # --------------------------------------------------------------------
+#  parser_service:
+#    # Docker будет собирать образ из Dockerfile в текущей папке
+#    build: .
+#    container_name: parser_service
+#    restart: unless-stopped
+#    # Парсер запустится только ПОСЛЕ того, как Kafka будет готова
+#    depends_on:
+#      - kafka
+#    environment:
+#      # Вот так парсер найдет Kafka внутри Docker-сети
+#      KAFKA_BOOTSTRAP_SERVERS: 'kafka:29092'
+#      KAFKA_TOPIC: 'social_media_content'
+#      # ... другие переменные для парсера
+#    networks:
+#      - media_monitoring_net
+
+  # --------------------------------------------------------------------
+  # Ваш сервис с базой данных (остался без изменений)
+  # --------------------------------------------------------------------
+  db:
+    image: postgres:17
+    container_name: my_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: user_service_db
     ports:
       - "5432:5432"
-    # Здесь мы "монтируем" локальную папку в контейнер, чтобы данные не терялись при перезапуске
     volumes:
       - postgres_data:/var/lib/postgresql/data
+    networks:
+      - media_monitoring_net
 
-# Здесь мы описываем "тома" (volumes) - это специальные хранилища для данных
+# Здесь мы описываем сети и тома
+# Сеть нужна, чтобы контейнеры могли общаться друг с другом по именам
+networks:
+  media_monitoring_net:
+    driver: bridge
+
 volumes:
   postgres_data:
-  # Просто объявляем том. Docker сам будет управлять им.
+  kafka_data:
