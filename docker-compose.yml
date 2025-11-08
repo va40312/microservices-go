@@ -94,13 +94,20 @@ services:
     environment:
       POSTGRES_USER: myuser
       POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: user_service_db
+      POSTGRES_DB: postgres
     ports:
       - "5432:5432"
     volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
     networks:
       - media_monitoring_net
+    healthcheck:
+      # Проверяем, что служебная база готова
+      test: [ "CMD-SHELL", "pg_isready -U myuser -d postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
 # Здесь мы описываем сети и тома
 # Сеть нужна, чтобы контейнеры могли общаться друг с другом по именам
