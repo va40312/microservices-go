@@ -1,5 +1,5 @@
 # Этап 1: Используем официальный образ Python
-FROM python:3.12.1-slim
+FROM python:3.12.1
 
 # Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
@@ -12,7 +12,7 @@ COPY requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 # Устанавливаем движки для Playwright (необходимы для TikTokApi)
-RUN python -m playwright install chromium
+RUN python -m playwright install chromium --with-deps
 
 # Копируем исходный код нашего приложения
 COPY src/ ./src/

@@ -66,28 +66,41 @@ services:
       - media_monitoring_net
 
   # --------------------------------------------------------------------
-  # Сервис вашего парсера на Python
+  # Сервис парсера на Python
   # --------------------------------------------------------------------
-#  parser_service:
-#    # Docker будет собирать образ из Dockerfile в текущей папке
-#    build: .
-#    container_name: parser_service
-#    restart: unless-stopped
-#    # Парсер запустится только ПОСЛЕ того, как Kafka будет готова
-#    depends_on:
-#      - kafka
-#    environment:
-#      # Вот так парсер найдет Kafka внутри Docker-сети
-#      KAFKA_BOOTSTRAP_SERVERS: 'kafka:29092'
-#      KAFKA_TOPIC: 'social_media_content'
-#      # ... другие переменные для парсера
-#    networks:
-#      - media_monitoring_net
+  tik-tok-parser-service:
+    build:
+      context: ./services/parsers/tik-tok-parser
+    container_name: parser_service
+    restart: unless-stopped
+    env_file:
+      - ./services/parsers/tik-tok-parser/.env.docker
+    depends_on:
+      - kafka
+#    volumes:
+#      - ./services/parsers/tik-tok-parser:/app
+    networks:
+      - media_monitoring_net
 
-  # --------------------------------------------------------------------
-  # Ваш сервис с базой данных (остался без изменений)
-  # --------------------------------------------------------------------
-  db:
+  virality-analyzer-service:
+    build:
+      context: ./services/virality-analyzer-service
+      # Жестко указываем, что ВСЕГДА собираем development-версию
+      target: development
+    # Пробрасываем папку для live reload
+    env_file:
+      - ./services/virality-analyzer-service/.env.docker
+    depends_on:
+      - postgres
+      - kafka
+    ports:
+      - "8100:8080" # Пример порта для вашего будущего API
+    volumes:
+      - ./services/virality-analyzer-service:/app
+    networks:
+      - media_monitoring_net
+
+  postgres:
     image: postgres:17
     container_name: my_postgres_db
     restart: always
