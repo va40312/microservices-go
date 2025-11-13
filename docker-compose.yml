@@ -1,14 +1,12 @@
-# Версия синтаксиса docker-compose
 version: '3.8'
 
-# Здесь мы описываем все сервисы (контейнеры), которые составляют наше приложение
 services:
+  # Сервисы инфраструктуры
   kafka:
-    image: confluentinc/cp-kafka:8.1.0 # Образ Kafka должен соответствовать Zookeeper
+    image: confluentinc/cp-kafka:8.1.0
     container_name: kafka
     restart: always
     ports:
-      # Этот порт нужен, чтобы мы могли подключаться к Kafka с нашего компьютера (снаружи Docker)
       - "9092:9092"
     environment:
       # --- KRaft-специфичные настройки ---
@@ -57,16 +55,36 @@ services:
     depends_on:
       - kafka
     ports:
-      - "8080:8080" # Мы будем заходить на него через localhost:8080
+      - "8080:8080"
     environment:
       KAFKA_CLUSTERS_0_NAME: local-kafka-cluster
-      # Вот так UI найдет твою Kafka внутри Docker-сети
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     networks:
       - media_monitoring_net
+  postgres:
+    image: postgres:17
+    container_name: my_postgres_db
+    restart: always
+    environment:
+      POSTGRES_USER: myuser
+      POSTGRES_PASSWORD: mysecretpassword
+      POSTGRES_DB: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - ./postgres-init:/docker-entrypoint-initdb.d
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      - media_monitoring_net
+    healthcheck:
+      # Проверяем, что служебная база готова
+      test: [ "CMD-SHELL", "pg_isready -U myuser -d postgres" ]
+      interval: 5s
+      timeout: 5s
+      retries: 5
 
   # --------------------------------------------------------------------
-  # Сервис парсера на Python
+  # Сервисы наших приложений
   # --------------------------------------------------------------------
   tik-tok-parser-service:
     build:
@@ -94,36 +112,12 @@ services:
       - postgres
       - kafka
     ports:
-      - "8100:8080" # Пример порта для вашего будущего API
+      - "8100:8080" # Пример порта для будущего API
     volumes:
       - ./services/virality-analyzer-service:/app
     networks:
       - media_monitoring_net
 
-  postgres:
-    image: postgres:17
-    container_name: my_postgres_db
-    restart: always
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: postgres
-    ports:
-      - "5432:5432"
-    volumes:
-      - ./postgres-init:/docker-entrypoint-initdb.d
-      - postgres_data:/var/lib/postgresql/data
-    networks:
-      - media_monitoring_net
-    healthcheck:
-      # Проверяем, что служебная база готова
-      test: [ "CMD-SHELL", "pg_isready -U myuser -d postgres" ]
-      interval: 5s
-      timeout: 5s
-      retries: 5
-
-# Здесь мы описываем сети и тома
-# Сеть нужна, чтобы контейнеры могли общаться друг с другом по именам
 networks:
   media_monitoring_net:
     driver: bridge
