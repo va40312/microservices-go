@@ -3,7 +3,8 @@ version: '3.8'
 services:
   # Сервисы инфраструктуры
   kafka:
-    image: confluentinc/cp-kafka:8.1.0
+    build:
+      context: ./infra/kafka-custom/
     container_name: kafka
     restart: always
     ports:
@@ -28,25 +29,14 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
 
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    healthcheck:
+      test: [ "CMD-SHELL", "kafka-topics --list --bootstrap-server localhost:9092" ]
+      interval: 15s
+      timeout: 10s
+      retries: 10
+      start_period: 90s
     volumes:
       - kafka_data:/var/lib/kafka/data
-    networks:
-      - media_monitoring_net
-  kafka-setup:
-    image: confluentinc/cp-kafka:8.1.0
-    container_name: kafka-setup
-    depends_on:
-      - kafka
-    command: >
-      bash -c "
-        echo 'Ожидание, пока брокер Kafka станет доступен...'
-        while ! kafka-topics --list --bootstrap-server kafka:29092 > /dev/null 2>&1; do
-          sleep 1
-        done
-        echo 'Kafka готова к работе!'
-        kafka-topics --create --if-not-exists --topic social_media_content --bootstrap-server kafka:29092 --partitions 1 --replication-factor 1
-        echo 'Топик social_media_content успешно создан или уже существует.'
-      "
     networks:
       - media_monitoring_net
   kafka-ui:
@@ -72,8 +62,8 @@ services:
     ports:
       - "5432:5432"
     volumes:
-      - ./postgres-init:/docker-entrypoint-initdb.d
       - postgres_data:/var/lib/postgresql/data
+      - ./infra/postgres-init:/docker-entrypoint-initdb.d
     networks:
       - media_monitoring_net
     healthcheck:
@@ -89,12 +79,13 @@ services:
   tik-tok-parser-service:
     build:
       context: ./services/parsers/tik-tok-parser
-    container_name: parser_service
+    container_name: tik-tok-parser
     restart: unless-stopped
     env_file:
       - ./services/parsers/tik-tok-parser/.env.docker
     depends_on:
-      - kafka
+      kafka:
+        condition: service_healthy
 #    volumes:
 #      - ./services/parsers/tik-tok-parser:/app
     networks:
@@ -105,12 +96,15 @@ services:
       context: ./services/virality-analyzer-service
       # Жестко указываем, что ВСЕГДА собираем development-версию
       target: development
+    container_name: virality-analyzer-service
     # Пробрасываем папку для live reload
     env_file:
       - ./services/virality-analyzer-service/.env.docker
     depends_on:
-      - postgres
-      - kafka
+      postgres:
+        condition: service_healthy
+      kafka:
+        condition: service_healthy
     ports:
       - "8100:8080" # Пример порта для будущего API
     volumes:

@@ -7,8 +7,6 @@ import (
 	"virality-analyzer-service/internal/config"
 	"virality-analyzer-service/internal/consumer"
 	"virality-analyzer-service/internal/storage"
-
-	"github.com/jackc/pgx/v5/pgxpool"
 )
 
 func main() {
@@ -21,18 +19,10 @@ func main() {
 	ctx := context.Background()
 
 	// Подключение к БД
-	dbPool, err := pgxpool.New(ctx, cfg.DatabaseURL)
+	dbPool, err := storage.ConnectToDBWithRetry(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Не удалось подключиться к базе данных: %v", err)
-		os.Exit(1)
+		log.Fatalf("Критическая ошибка: Не удалось инициализировать подключение к БД. %v", err)
 	}
-	defer dbPool.Close()
-
-	if err := dbPool.Ping(ctx); err != nil {
-		log.Fatalf("Не удалось пинговать базу данных: %v", err)
-		os.Exit(1)
-	}
-	log.Println("Успешное подключение к PostgreSQL!")
 
 	if err := consumer.CheckKafkaConnection(ctx, cfg.KafkaBrokers, cfg.KafkaTopic); err != nil {
 		log.Fatalf("Критическая ошибка: проверка Kafka не пройдена: %v", err)

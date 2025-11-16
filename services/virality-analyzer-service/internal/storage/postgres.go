@@ -50,3 +50,34 @@ func (r *postgresRepository) SaveSnapshot(ctx context.Context, msg *domain.TikTo
 	log.Printf("Успешно сохранен снимок для видео: %s", p.PlatformID)
 	return nil
 }
+
+func ConnectToDBWithRetry(ctx context.Context, databaseURL string) (*pgxpool.Pool, error) {
+	maxRetries := 10
+	baseRetryInterval := 1 * time.Second
+	maxRetryInterval := 20 * time.Second
+
+	var dbPool *pgxpool.Pool
+	var err error
+
+	for i := 0; i < maxRetries; i++ {
+		dbPool, err = pgxpool.New(ctx, databaseURL)
+		if err == nil {
+			err = dbPool.Ping(ctx)
+			if err == nil {
+				log.Println("Успешное подключение к PostgreSQL!")
+				return dbPool, nil
+			}
+		}
+
+		nextRetryWait := baseRetryInterval * time.Duration(1<<i) // 1<<i это 2 в степени i
+		if nextRetryWait > maxRetryInterval {
+			nextRetryWait = maxRetryInterval
+		}
+
+		log.Printf("Не удалось подключиться к БД (попытка %d/%d): %s. Повтор через %v...", i+1, maxRetries, err, nextRetryWait)
+		time.Sleep(nextRetryWait)
+	}
+
+	// Если мы вышли из цикла, значит, все попытки провалились.
+	return nil, fmt.Errorf("не удалось подключиться к БД после %d попыток: %w", maxRetries, err)
+}
