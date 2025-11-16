@@ -12,7 +12,7 @@
 ```bash
 cp .env.example .env.docker
 ```
-Запустить контейнеры:
+Запустить контейнеры (make up-build):
 ```bash
 docker compose up -d --build 
 ```
@@ -30,7 +30,7 @@ docker compose up -d --build
 
 Языки программирования: `Go`,`Python`.
 
-Инфраструктура: `Postgres 17`, `Kafka 8.1.0`.
+Инфраструктура: `Postgres 17`, `Kafka 8.1.0` **(Zookeeper не нужен, используется режим KRaft)**.
 
 ### Почему монорепозиторий?
 Было принято решение использовать монорепозиторий для всех сервисов,
