@@ -1,21 +1,17 @@
 from TikTokApi import TikTokApi
 import logging
-from . import config  # Импортируем конфиг, чтобы достать токен
+from . import config
 
-
-# --- ФУНКЦИЯ ТЕПЕРЬ АСИНХРОННАЯ ---
 async def get_trending_videos(count: int):
     """Получает список популярных видео из TikTok."""
     video_list = []
 
-    # Проверяем, есть ли токен
     if not config.MS_TOKEN:
         logging.error("Не найден ms_token в .env файле! Парсинг невозможен.")
         return video_list
 
     logging.info(f"Запрос {count} трендовых видео из TikTok...")
     try:
-        # --- ИСПОЛЬЗУЕМ СИНТАКСИС ИЗ ДОКУМЕНТАЦИИ ---
         async with TikTokApi() as api:
             # Создаем сессию с нашим токеном
             await api.create_sessions(ms_tokens=[config.MS_TOKEN], num_sessions=1, sleep_after=3, browser=config.TIKTOK_BROWSER)

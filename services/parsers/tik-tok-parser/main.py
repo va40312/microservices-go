@@ -1,6 +1,6 @@
 import logging
 import time
-import asyncio  # <-- ИМПОРТИРУЕМ ASYNCIO
+import asyncio
 from src import config
 from src.tiktok_parser import get_trending_videos
 from src.message_formatter import format_tiktok_message
@@ -12,8 +12,6 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 def run_parser_cycle(producer: MediaContentProducer):
     """Выполняет один цикл работы: парсинг, форматирование, отправка."""
 
-    # --- ИЗМЕНЯЕМ ВЫЗОВ ФУНКЦИИ ---
-    # Так как get_trending_videos теперь асинхронная, ее нужно запускать через asyncio.run()
     videos = asyncio.run(get_trending_videos(config.TRENDING_VIDEO_COUNT))
 
     if not videos:

@@ -1,0 +1,55 @@
+{
+    "$schema": "http://json-schema.org/draft-07/schema#",
+    "title": "VideoStats",
+    "description": "Схема для сообщения о статистике видео из социальных сетей",
+    "type": "object",
+    "properties": {
+        "video_id": {
+            "description": "Уникальный ID видео",
+            "type": "string"
+        },
+        "author": {
+            "description": "Имя автора видео",
+            "type": "string"
+        },
+        "description": {
+            "description": "Описание или заголовок видео",
+            "type": "string"
+        },
+        "likes": {
+            "description": "Количество лайков",
+            "type": "integer",
+            "minimum": 0
+        },
+        "comments": {
+            "description": "Количество комментариев",
+            "type": "integer",
+            "minimum": 0
+        },
+        "shares": {
+            "description": "Количество репостов",
+            "type": "integer",
+            "minimum": 0
+        },
+        "views": {
+            "description": "Количество просмотров",
+            "type": "integer",
+            "minimum": 0
+        },
+        "created_at": {
+            "description": "Дата и время создания видео в формате ISO 8601 (UTC)",
+            "type": "string",
+            "format": "date-time"
+        }
+    },
+    "required": [
+        "video_id",
+        "author",
+        "description",
+        "likes",
+        "comments",
+        "shares",
+        "views",
+        "created_at"
+    ]
+}

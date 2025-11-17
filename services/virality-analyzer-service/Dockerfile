@@ -1,9 +1,8 @@
-# --- ЭТАП 1: Образ для РАЗРАБОТКИ (с live reload) ---
+# Образ для РАЗРАБОТКИ (с live reload)
 FROM golang:1.18.10-alpine AS development
 
 WORKDIR /app
 
-# Используем Air, он лучше
 RUN go install github.com/cosmtrek/air@v1.40.4
 
 RUN go install -tags="postgres" github.com/golang-migrate/migrate/v4/cmd/migrate@v4.17.1
@@ -20,10 +19,6 @@ RUN chmod +x ./entrypoint.sh
 # Он будет запущен вместо стандартной оболочки.
 ENTRYPOINT ["./entrypoint.sh"]
 
-
-# --- ЭТАПА 2: ПРОДАКШЕН ---
-# Просто оставляем этот блок на будущее. Он вам не мешает,
-# но показывает, что вы думаете о будущем.
 FROM alpine:latest AS production
 WORKDIR /app
 COPY --from=development /app/go.mod ./

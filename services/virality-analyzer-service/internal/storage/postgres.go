@@ -6,28 +6,23 @@ import (
 	"log"
 	"time"
 
-	"virality-analyzer-service/internal/domain" // <-- Импортируем наши модели
+	"virality-analyzer-service/internal/domain"
 
 	"github.com/jackc/pgx/v5/pgxpool"
 )
 
-// SnapshotRepository определяет интерфейс для работы с хранилищем снимков.
-// Интерфейсы - ключ к тестируемости!
 type SnapshotRepository interface {
 	SaveSnapshot(ctx context.Context, msg *domain.TikTokMessage) error
 }
 
-// postgresRepository - конкретная реализация репозитория для PostgreSQL.
 type postgresRepository struct {
 	pool *pgxpool.Pool
 }
 
-// NewPostgresRepository создает новый экземпляр репозитория.
 func NewPostgresRepository(dbPool *pgxpool.Pool) SnapshotRepository {
 	return &postgresRepository{pool: dbPool}
 }
 
-// SaveSnapshot реализует метод сохранения в БД.
 func (r *postgresRepository) SaveSnapshot(ctx context.Context, msg *domain.TikTokMessage) error {
 	p := msg.Payload
 

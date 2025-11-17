@@ -2,19 +2,18 @@ from datetime import datetime, timezone
 def format_tiktok_message(video_data: dict) -> dict:
     """Форматирует данные из TikTok в расширенный универсальный формат для анализа."""
 
-    # --- Основные объекты ---
+    # Основные объекты
     stats = video_data.get('stats', {})
     author = video_data.get('author', {})
     music = video_data.get('music', {})
     video_info = video_data.get('video', {})
     author_stats = video_data.get('authorStats', {})
 
-    # --- Извлечение даты создания (как и раньше) ---
+    # Извлечение даты создания
     create_time_unix = video_data.get('createTime', 0)
     published_at_iso = datetime.fromtimestamp(create_time_unix,
                                               tz=timezone.utc).isoformat() if create_time_unix else None
 
-    # --- ИСПРАВЛЕННАЯ ЛОГИКА ИЗВЛЕЧЕНИЯ ХЭШТЕГОВ ---
     # Хэштеги находятся в поле 'textExtra'
     text_extra_list = video_data.get('textExtra', [])
     # Фильтруем список: берем только словари с type=1 (это хэштеги) и извлекаем 'hashtagName'
@@ -30,7 +29,7 @@ def format_tiktok_message(video_data: dict) -> dict:
             "description": video_data.get('desc'),
             "published_at": published_at_iso,
             "url": f"https://www.tiktok.com/@{author.get('uniqueId')}/video/{video_data.get('id')}",
-            # --- Основные метрики вовлеченности ---
+            # Основные метрики вовлеченности
             "stats": {
                 "views": stats.get('playCount'),
                 "likes": stats.get('diggCount'),
