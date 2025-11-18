@@ -100,7 +100,8 @@ services:
   # --------------------------------------------------------------------
   tik-tok-parser-service:
     build:
-      context: ./services/parsers/tik-tok-parser
+      context: .
+      dockerfile: ./services/parsers/tik-tok-parser/Dockerfile
     container_name: tik-tok-parser
     restart: unless-stopped
     env_file:
