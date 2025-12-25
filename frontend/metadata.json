@@ -1,0 +1,5 @@
+{
+  "name": "TrendPulse AI",
+  "description": "A minimalist, glassmorphism-styled media monitoring dashboard. It tracks cross-platform content trends (TikTok, YouTube) and uses Gemini AI to predict viral potential and analyze audience sentiment.",
+  "requestFramePermissions": []
+}
