@@ -1,26 +1,15 @@
-# Этап 1: Используем официальный образ Python
 FROM python:3.12.1
 
-# Устанавливаем рабочую директорию внутри контейнера
 WORKDIR /app
 
-# Копируем схемы для schema registry
-COPY contracts/schemas /app/contracts/schemas
+RUN pip install poetry
+RUN poetry config virtualenvs.create false
 
-# Копируем файл с зависимостями
-COPY requirements.txt .
+COPY poetry.lock pyproject.toml ./
 
-# Устанавливаем зависимости
-# --no-cache-dir уменьшает размер образа
-RUN pip install --no-cache-dir -r requirements.txt
+RUN poetry install --no-interaction --no-ansi --no-root
+RUN poetry run python -m playwright install chromium --with-deps
 
-# Устанавливаем движки для Playwright (необходимы для TikTokApi)
-RUN python -m playwright install chromium --with-deps
+COPY ./app/ ./app
 
-# Копируем исходный код нашего приложения
-COPY services/parsers/tik-tok-parser/src/ ./src/
-COPY services/parsers/tik-tok-parser/main.py .
-
-# Команда для запуска нашего приложения при старте контейнера
-# python -u: отключает буферизацию вывода, чтобы логи сразу появлялись в Docker logs
-CMD ["python", "-u", "main.py"]
+CMD ["python", "-u", "-m", "app.main"]

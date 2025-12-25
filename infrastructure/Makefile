@@ -1,6 +1,4 @@
 up:
-	docker compose up -d
-up-build:
 	docker compose up -d --build
 	@echo "Очистка <none> образов"
 	@docker image prune -f

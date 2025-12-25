@@ -1,6 +1,6 @@
 from TikTokApi import TikTokApi
 import logging
-from . import config
+from app.core import config
 
 async def get_trending_videos(count: int):
     """Получает список популярных видео из TikTok."""

@@ -1,10 +1,10 @@
 import logging
 import time
 import asyncio
-from src import config
-from src.tiktok_parser import get_trending_videos
-from src.message_formatter import format_tiktok_message
-from src.kafka_producer import MediaContentProducer
+from app.core import config
+from app.parser.tiktok_parser import get_trending_videos
+from app.core.message_formatter import format_tiktok_message
+from app.core.kafka_producer import MediaContentProducer
 
 logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
