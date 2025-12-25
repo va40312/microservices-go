@@ -1,0 +1,34 @@
+[project]
+name = "tik-tok-parser"
+version = "0.1.0"
+description = ""
+authors = [
+    {name = "va40312",email = "va40312@yandex.by"}
+]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "anyio (==4.11.0)",
+    "certifi (==2025.10.5)",
+    "charset-normalizer (==3.4.4)",
+    "greenlet (==3.2.4)",
+    "h11 (==0.16.0)",
+    "httpcore (==1.0.9)",
+    "httpx (==0.28.1)",
+    "idna (==3.11)",
+    "kafka-python (==2.2.15)",
+    "playwright (==1.53.0)",
+    "proxyproviders (==0.2.1)",
+    "pyee (==13.0.0)",
+    "python-dotenv (==1.2.1)",
+    "requests (==2.32.5)",
+    "sniffio (==1.3.1)",
+    "tiktokapi (==7.2.1)",
+    "typing-extensions (==4.15.0)",
+    "urllib3 (==2.5.0)"
+]
+
+
+[build-system]
+requires = ["poetry-core>=2.0.0,<3.0.0"]
+build-backend = "poetry.core.masonry.api"
