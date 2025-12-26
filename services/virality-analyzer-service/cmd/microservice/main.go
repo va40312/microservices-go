@@ -18,11 +18,16 @@ func main() {
 
 	ctx := context.Background()
 
-	// Подключение к БД
-	dbPool, err := storage.ConnectToDBWithRetry(ctx, cfg.DatabaseURL)
+	mongoClient, err := storage.ConnectToDBWithRetry(ctx, cfg.DatabaseURL)
 	if err != nil {
-		log.Fatalf("Критическая ошибка: Не удалось инициализировать подключение к БД. %v", err)
+		log.Fatalf("Критическая ошибка: Не удалось инициализировать подключение к MongoDB. %v", err)
 	}
+
+	defer func() {
+		if err = mongoClient.Disconnect(ctx); err != nil {
+			log.Printf("Ошибка при отключении от MongoDB: %v", err)
+		}
+	}()
 
 	if err := consumer.CheckKafkaConnection(ctx, cfg.KafkaBrokers, cfg.KafkaTopic); err != nil {
 		log.Fatalf("Критическая ошибка: проверка Kafka не пройдена: %v", err)
@@ -30,7 +35,7 @@ func main() {
 
 	// Сборка компонентов (Dependency Injection)
 	// Создаем репозиторий, передавая ему пул соединений
-	repo := storage.NewPostgresRepository(dbPool)
+	repo := storage.NewMongoRepository(mongoClient)
 
 	// Создаем консьюмер, передавая ему репозиторий
 	kafkaConsumer := consumer.NewMessageConsumer(cfg.KafkaBrokers, cfg.KafkaTopic, repo)

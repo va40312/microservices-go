@@ -47,26 +47,26 @@ services:
       KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:29092
     networks:
       - media_monitoring_net
-  postgres:
-    image: postgres:17
-    container_name: postgres
-    restart: always
-    environment:
-      POSTGRES_USER: myuser
-      POSTGRES_PASSWORD: mysecretpassword
-      POSTGRES_DB: postgres
+  mongodb:
+    image: mongo:8.2.3
+    container_name: mongodb
+    restart: unless-stopped
     ports:
-      - "5432:5432"
+      # Пробрасываем порт, чтобы ты мог подключиться через Compass/DataGrip
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: password
     volumes:
-      - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init:/docker-entrypoint-initdb.d
+      - mongo_data:/data/db
     networks:
       - media_monitoring_net
     healthcheck:
-      test: [ "CMD-SHELL", "pg_isready -U myuser -d postgres" ]
-      interval: 5s
-      timeout: 5s
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 10s
       retries: 5
+      start_period: 20s
 
   tik-tok-parser-service:
     build:
@@ -91,7 +91,7 @@ services:
     env_file:
       - ../services/virality-analyzer-service/.env.docker
     depends_on:
-      postgres:
+      mongodb:
         condition: service_healthy
       kafka:
         condition: service_healthy
@@ -107,5 +107,5 @@ networks:
     driver: bridge
 
 volumes:
-  postgres_data:
+  mongo_data:
   kafka_data:
