@@ -4,6 +4,7 @@ import (
 	"context"
 	"log"
 	"os"
+	"virality-analyzer-service/internal/api"
 	"virality-analyzer-service/internal/config"
 	"virality-analyzer-service/internal/consumer"
 	"virality-analyzer-service/internal/storage"
@@ -40,6 +41,15 @@ func main() {
 	// Создаем консьюмер, передавая ему репозиторий
 	kafkaConsumer := consumer.NewMessageConsumer(cfg.KafkaBrokers, cfg.KafkaTopic, repo)
 
-	// Запуск приложения
-	kafkaConsumer.Run(ctx)
+	// Запуск kafka в фоне
+	go func() {
+		kafkaConsumer.Run(ctx)
+	}()
+
+	router := api.SetupRouter(mongoClient)
+
+	log.Printf("HTTP Server running on port %s...", cfg.Port)
+	if err := router.Run(":" + cfg.Port); err != nil {
+		log.Fatal(err)
+	}
 }
