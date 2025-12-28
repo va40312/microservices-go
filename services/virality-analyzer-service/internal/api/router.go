@@ -2,6 +2,7 @@ package api
 
 import (
 	"virality-analyzer-service/internal/api/handlers"
+	"virality-analyzer-service/internal/api/middleware"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
@@ -17,7 +18,7 @@ func SetupRouter(mongoClient *mongo.Client) *gin.Engine {
 	dashboardHandler := handlers.NewDashboardHandler(mongoClient)
 
 	// Группа для внутренних API
-	internal := r.Group("/internal")
+	internal := r.Group("/internal", middleware.InternalAuthMiddleware())
 	{
 		internal.GET("/trending", dashboardHandler.GetTrending)
 		internal.GET("/leaderboard", dashboardHandler.GetLeaderboard)

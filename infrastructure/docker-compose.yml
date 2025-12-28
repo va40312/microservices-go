@@ -67,6 +67,14 @@ services:
       timeout: 10s
       retries: 5
       start_period: 20s
+  redis:
+    image: redis:8.4.0-alpine
+    container_name: redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - media_monitoring_net
 
   tik-tok-parser-service:
     build:
@@ -90,17 +98,41 @@ services:
     container_name: virality-analyzer-service
     env_file:
       - ../services/virality-analyzer-service/.env.docker
+    environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
     depends_on:
       mongodb:
         condition: service_healthy
       kafka:
         condition: service_healthy
     ports:
-      - "8100:8080"
+      - "8100:8100"
     volumes:
       - ../services/virality-analyzer-service:/app
     networks:
       - media_monitoring_net
+  api-gateway:
+    build:
+      context: ../services/api-gateway
+    container_name: api-gateway
+    restart: unless-stopped
+    env_file:
+      - ../services/api-gateway/.env.docker
+    environment:
+      - INTERNAL_API_KEY=${INTERNAL_API_KEY}
+    tty: true
+    ports:
+      - "8000:8000"
+    command: ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+    volumes:
+      - ../services/api-gateway:/app
+    networks:
+      - media_monitoring_net
+    depends_on:
+      redis:
+        condition: service_started
+      virality-analyzer-service:
+        condition: service_started
 
 networks:
   media_monitoring_net:

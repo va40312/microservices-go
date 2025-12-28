@@ -10,14 +10,9 @@ WORKDIR /app
 RUN poetry config virtualenvs.create false
 
 COPY pyproject.toml poetry.lock ./
-RUN poetry install --no-interaction --no-ansi --without dev --no-root
+RUN poetry install --no-interaction --no-ansi --no-root
 
-COPY ./app ./
-
-RUN useradd --create-home --home-dir /home/appuser --shell /bin/bash appuser
-RUN chown -R appuser:appuser /app
-
-USER appuser
+COPY ./app ./app
 
 EXPOSE 8000
 CMD ["uvicorn", "app.main:app", "--host", "0.0.0.0", "--port", "8000"]
