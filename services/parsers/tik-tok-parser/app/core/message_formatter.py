@@ -39,9 +39,7 @@ def format_tiktok_message(video_data: dict) -> dict:
             },
             "content_meta": {
                 "duration": video_info.get('duration'),
-                "hashtags": hashtags,
-                "music_title": music.get('title'),
-                "is_original_sound": music.get('original', False)
+                "hashtags": hashtags
             },
             "author": {
                 "username": author.get('uniqueId'),

@@ -1,43 +1,53 @@
-from pydantic import BaseModel
-from typing import List, Dict, Any
+from pydantic import BaseModel, Field
+from typing import List, Dict, Any, Optional
 
-# Модель для одного снапшота (для графика)
+class Author(BaseModel):
+    username: str
+    nickname: str
+    followers: int
+
+class VideoStats(BaseModel):
+    views: int
+    likes: int
+    comments: int
+    shares: int
+
+class VideoMetrics(BaseModel):
+    virality_score: int
+    engagement_rate: float
+
+# --- Модель для списка видео (Trend Feed и Leaderboard) ---
+class VideoInList(BaseModel):
+    id: str = Field(..., alias="_id")
+    author: Author
+    title: str
+    stats: VideoStats
+    metrics: VideoMetrics
+    published_at: Optional[str] = None
+    source: str
+    url: str
+    video_platform_id: str
+
+# --- Остальные модели ---
+class Pagination(BaseModel):
+    limit: int
+    page: int
+    total: int
+class PaginatedVideosResponse(BaseModel):
+    data: List[VideoInList]
+    pagination: Pagination
+
 class Snapshot(BaseModel):
     snapshot_time: str
-    stats: Dict[str, Any]
+    stats: VideoStats
+    video_id: str
 
-# Модель для пагинации
-class Pagination(BaseModel):
-    total: int
-    page: int
-    limit: int
-
-# Модель для видео (остается почти без изменений)
-class TrendingVideo(BaseModel):
-    video_platform_id: str
-    author_username: str
-    description: str | None = "" # Сделай необязательным, на всякий случай
-    # ... другие поля, которые тебе нужны
-    stats: Dict[str, Any] # Просто как словарь
-
-# --- ГЛАВНОЕ ИЗМЕНЕНИЕ ---
-# Модель для полного ответа от эндпоинта /trending
-class PaginatedTrendingResponse(BaseModel):
-    data: List[TrendingVideo]
-    pagination: Pagination
+TrajectoryResponse = List[Snapshot]
 
 class DashboardStats(BaseModel):
     total_assets: int
     status: str
 
-class LeaderboardItem(BaseModel):
-    # Поля здесь должны соответствовать тому, что отдает Go
-    video_platform_id: str
-    author_username: str
-    description: str
-    # ... и так далее
-
-# --- ВОТ ТО, ЧЕГО НЕ ХВАТАЛО ---
 class DashboardResponse(BaseModel):
     stats: DashboardStats
-    leaderboard: List[LeaderboardItem]
+    leaderboard: List[VideoInList]

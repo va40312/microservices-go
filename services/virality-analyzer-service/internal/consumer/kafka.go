@@ -42,7 +42,7 @@ func (c *MessageConsumer) Run(ctx context.Context) {
 			continue
 		}
 
-		var message domain.TikTokMessage
+		var message domain.SocialMediaMessage
 		if err := json.Unmarshal(msg.Value, &message); err != nil {
 			log.Printf("Ошибка разбора JSON: %v. Сообщение: %s", err, string(msg.Value))
 			continue

@@ -3,19 +3,20 @@ package api
 import (
 	"virality-analyzer-service/internal/api/handlers"
 	"virality-analyzer-service/internal/api/middleware"
+	"virality-analyzer-service/internal/storage"
 
 	"github.com/gin-gonic/gin"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
 // SetupRouter - функция, которая создает и настраивает роутер
-func SetupRouter(mongoClient *mongo.Client) *gin.Engine {
+func SetupRouter(client *mongo.Client, repo storage.SnapshotRepository) *gin.Engine {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 	//gin.SetMode(gin.ReleaseMode)
 
 	// Создаем экземпляр нашего хендлера, передавая ему подключение к БД
-	dashboardHandler := handlers.NewDashboardHandler(mongoClient)
+	dashboardHandler := handlers.NewDashboardHandler(client, repo)
 
 	// Группа для внутренних API
 	internal := r.Group("/internal", middleware.InternalAuthMiddleware())

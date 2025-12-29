@@ -46,7 +46,7 @@ func main() {
 		kafkaConsumer.Run(ctx)
 	}()
 
-	router := api.SetupRouter(mongoClient)
+	router := api.SetupRouter(mongoClient, repo)
 
 	log.Printf("HTTP Server running on port %s...", cfg.Port)
 	if err := router.Run(":" + cfg.Port); err != nil {

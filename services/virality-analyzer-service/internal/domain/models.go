@@ -2,7 +2,7 @@ package domain
 
 import "time"
 
-type TikTokMessage struct {
+type SocialMediaMessage struct {
 	Source    string    `json:"source"`
 	EventTime time.Time `json:"event_time"`
 	DataType  string    `json:"data_type"`
@@ -27,9 +27,12 @@ type Stats struct {
 }
 
 type ContentMeta struct {
-	MusicTitle string `json:"music_title"`
+	Duration int64    `json:"duration"`
+	Hashtags []string `json:"hashtags"`
 }
 
 type Author struct {
-	Username string `json:"username"`
+	Username  string `json:"username"`
+	Nickname  string `json:"nickname"`
+	Followers int64  `json:"follower_count"`
 }
