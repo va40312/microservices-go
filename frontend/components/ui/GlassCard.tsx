@@ -1,3 +1,4 @@
+
 import React from 'react';
 
 interface GlassCardProps extends React.HTMLAttributes<HTMLDivElement> {
@@ -25,13 +26,13 @@ export const GlassCard: React.FC<GlassCardProps> = ({ children, className = '', 
       {/* Subtle shine effect on top */}
       <div className="absolute top-0 left-0 right-0 h-px bg-gradient-to-r from-transparent via-white/10 to-transparent pointer-events-none"></div>
       
-      {/* Noise texture overlay for that premium feel */}
+      {/* Noise texture overlay */}
       <div className="absolute inset-0 opacity-[0.03] pointer-events-none bg-[url('https://grainy-gradients.vercel.app/noise.svg')] mix-blend-overlay"></div>
       
-      {/* Content */}
-      <div className="relative z-10 h-full">
+      {/* Content wrapper - Removed forced h-full to prevent empty space at the bottom of lists */}
+      <div className="relative z-10">
         {children}
       </div>
     </div>
   );
-};
+}

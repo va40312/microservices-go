@@ -1,3 +1,4 @@
+
 export enum Platform {
   TIKTOK = 'TikTok',
   YOUTUBE = 'YouTube',
@@ -9,14 +10,13 @@ export interface User {
   id: string;
   email: string;
   name: string;
-  avatar?: string;
+  authHeader?: string; // Base64 credentials for Basic Auth
 }
 
 export interface HistoryPoint {
   timestamp: string;
   views: number;
   likes: number;
-  comments: number;
 }
 
 export interface ContentItem {
@@ -25,45 +25,37 @@ export interface ContentItem {
   author: string;
   thumbnail: string;
   platform: Platform;
-  
-  // Current Stats
   views: number;
   likes: number;
   comments: number;
   shares: number;
-  
-  // Computed Metrics
-  engagementRate: number; // Percentage
-  viralityScore: number; // Custom formula
-  sentimentScore: number; // 0 to 100
-  
+  viralityScore: number;
+  engagementRate: number;
+  sentimentScore: number;
   publishedAt: string;
   parsedAt: string;
   url: string;
   tags: string[];
-  
-  // Historical data for the "Microscope" chart
-  history: HistoryPoint[];
+  history?: HistoryPoint[];
 }
 
-export interface PlatformStats {
-  platform: Platform;
-  totalViews: number;
-  activeTracked: number;
-  viralVelocity: number; 
-  trendHistory: { timestamp: string; value: number }[];
+export interface DashboardData {
+  totalAssets: number;
+  systemStatus: 'Nominal' | 'Warning' | 'Down';
+  leaderboard: ContentItem[];
 }
 
-export interface SystemMetrics {
-  totalVideosStored: number;
-  avgLikes: number;
-  topCreator24h: { name: string; growth: number };
-  parsingActivity: { hour: string; count: number }[]; // For the "Activity by Hour" chart
-}
-
+// Interface for AI trend analysis results returned by Gemini
 export interface AIAnalysisResult {
   summary: string;
   opportunities: string[];
   riskAssessment: string;
   predictedTrend: 'Rising' | 'Stable' | 'Falling';
+}
+
+// Interface for platform-specific statistics used in analytics and visualizations
+export interface PlatformStats {
+  platform: Platform;
+  viralVelocity: number;
+  trendHistory: { timestamp: string; value: number }[];
 }

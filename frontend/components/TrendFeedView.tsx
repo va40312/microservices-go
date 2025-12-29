@@ -1,8 +1,9 @@
+
 import React, { useState, useEffect } from 'react';
-import { ContentItem } from '../types';
-import { fetchDashboardContent } from '../services/api';
+import { ContentItem, Platform } from '../types';
+import { fetchTrendingVideos } from '../services/api';
 import { GlassCard } from './ui/GlassCard';
-import { Search, Filter, ArrowUpDown, MoreHorizontal, LayoutGrid, Table as TableIcon, ChevronRight } from 'lucide-react';
+import { ChevronRight, LayoutGrid, Table as TableIcon, BarChart2, Filter, SortDesc, ChevronLeft } from 'lucide-react';
 
 interface TrendFeedProps {
   onVideoClick: (video: ContentItem) => void;
@@ -10,145 +11,188 @@ interface TrendFeedProps {
 
 export const TrendFeedView: React.FC<TrendFeedProps> = ({ onVideoClick }) => {
   const [items, setItems] = useState<ContentItem[]>([]);
-  const [viewMode, setViewMode] = useState<'table' | 'grid'>('table');
-  const [search, setSearch] = useState('');
-  const [sortBy, setSortBy] = useState<'viralityScore' | 'publishedAt' | 'views'>('viralityScore');
+  const [loading, setLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<'grid' | 'table'>('table');
+  
+  const [platformFilter, setPlatformFilter] = useState<string>('All');
+  const [sortBy, setSortBy] = useState<string>('newest');
+  const [page, setPage] = useState(1);
+
+  const loadData = () => {
+    setLoading(true);
+    
+    // Бэкенд ожидает lowercase (tiktok, youtube)
+    let platformParam: string | null = null;
+    if (platformFilter !== 'All') {
+      // Извлекаем только название платформы и в нижний регистр
+      platformParam = platformFilter.split(' ')[0].toLowerCase();
+    }
+
+    fetchTrendingVideos(sortBy, platformParam, page)
+      .then((newItems) => {
+        setItems(newItems);
+      })
+      .catch(err => console.error("Failed to fetch trending:", err))
+      .finally(() => setLoading(false));
+  };
 
   useEffect(() => {
-    fetchDashboardContent().then(setItems);
-  }, []);
+    loadData();
+  }, [platformFilter, sortBy, page]);
 
-  const filteredItems = items
-    .filter(item => item.title.toLowerCase().includes(search.toLowerCase()) || item.author.toLowerCase().includes(search.toLowerCase()))
-    .sort((a, b) => {
-      if (sortBy === 'publishedAt') return new Date(b.publishedAt).getTime() - new Date(a.publishedAt).getTime();
-      return b[sortBy] - a[sortBy];
-    });
+  useEffect(() => {
+    setPage(1);
+  }, [platformFilter, sortBy]);
+
+  if (loading && items.length === 0) return (
+    <div className="flex flex-col justify-center items-center h-[50vh] gap-4">
+      <div className="animate-spin h-8 w-8 border-b-2 border-indigo-500 rounded-full"></div>
+      <span className="text-zinc-500 font-mono text-xs uppercase tracking-widest">Fetching Trends...</span>
+    </div>
+  );
 
   return (
-    <div className="space-y-6">
-      {/* Search & Filter Toolbar */}
-      <GlassCard className="p-4 flex flex-col lg:flex-row gap-4 justify-between items-center">
-        <div className="relative w-full lg:w-96 group">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 w-4 h-4 group-focus-within:text-indigo-400 transition-colors" />
-          <input 
-            type="text" 
-            placeholder="Search assets..." 
-            value={search}
-            onChange={(e) => setSearch(e.target.value)}
-            className="w-full bg-black/20 border border-white/10 rounded-lg pl-10 pr-4 py-2 text-sm text-white focus:outline-none focus:border-indigo-500/30 transition-all"
-          />
-        </div>
-
-        <div className="flex items-center gap-3 w-full lg:w-auto overflow-x-auto pb-2 lg:pb-0">
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/10 rounded-lg text-sm text-zinc-300 shrink-0">
-            <Filter size={14} className="text-zinc-500" />
-            <select className="bg-transparent border-none focus:ring-0 text-zinc-300 outline-none cursor-pointer text-xs font-semibold">
-              <option>All Platforms</option>
-              <option>TikTok</option>
-              <option>YouTube</option>
-            </select>
-          </div>
-
-          <div className="flex items-center gap-2 px-3 py-1.5 bg-black/20 border border-white/10 rounded-lg text-sm text-zinc-300 shrink-0">
-            <ArrowUpDown size={14} className="text-zinc-500" />
+    <div className="flex flex-col space-y-4">
+      {/* Controls Header */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 bg-black/20 p-4 rounded-2xl border border-white/5 backdrop-blur-md shrink-0">
+        <div className="flex flex-wrap items-center gap-3">
+          <div className="relative group">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-indigo-400 transition-colors">
+              <Filter size={14} />
+            </div>
             <select 
-              className="bg-transparent border-none focus:ring-0 text-zinc-300 outline-none cursor-pointer text-xs font-semibold"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as any)}
+              value={platformFilter}
+              onChange={(e) => setPlatformFilter(e.target.value)}
+              className="bg-zinc-900/50 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-indigo-500/50 appearance-none hover:bg-zinc-800 transition-all cursor-pointer"
             >
-              <option value="viralityScore">Virality Score</option>
-              <option value="views">Most Viewed</option>
-              <option value="publishedAt">Newest</option>
+              <option value="All">All Platforms</option>
+              <option value={Platform.TIKTOK}>TikTok Only</option>
+              <option value={Platform.YOUTUBE}>YouTube Only</option>
+              <option value={Platform.INSTAGRAM}>Instagram</option>
             </select>
           </div>
 
-          <div className="flex bg-black/20 rounded-lg p-1 border border-white/10 shrink-0">
-             <button 
-               onClick={() => setViewMode('table')}
-               className={`p-1.5 rounded ${viewMode === 'table' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-             >
-               <TableIcon size={16} />
-             </button>
-             <button 
-               onClick={() => setViewMode('grid')}
-               className={`p-1.5 rounded ${viewMode === 'grid' ? 'bg-indigo-600 text-white shadow-lg shadow-indigo-500/20' : 'text-zinc-500 hover:text-zinc-300'}`}
-             >
-               <LayoutGrid size={16} />
-             </button>
+          <div className="relative group">
+            <div className="absolute left-3 top-1/2 -translate-y-1/2 text-zinc-500 pointer-events-none group-focus-within:text-indigo-400 transition-colors">
+              <SortDesc size={14} />
+            </div>
+            <select 
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value)}
+              className="bg-zinc-900/50 border border-white/10 rounded-xl pl-9 pr-4 py-2 text-xs font-bold text-zinc-300 focus:outline-none focus:border-indigo-500/50 appearance-none hover:bg-zinc-800 transition-all cursor-pointer"
+            >
+              <option value="newest">Newest First</option>
+              <option value="most_viewed">Most Viewed</option>
+              <option value="virality">Viral Potential</option>
+            </select>
           </div>
+          
+          {loading && <div className="animate-spin h-4 w-4 border-b-2 border-indigo-500 rounded-full ml-2"></div>}
         </div>
-      </GlassCard>
+        
+        <div className="flex bg-black/40 rounded-xl p-1 border border-white/10">
+           <button 
+             onClick={() => setViewMode('table')}
+             className={`p-2 rounded-lg transition-all ${viewMode === 'table' ? 'bg-indigo-600 text-white' : 'text-zinc-500'}`}
+           >
+             <TableIcon size={18} />
+           </button>
+           <button 
+             onClick={() => setViewMode('grid')}
+             className={`p-2 rounded-lg transition-all ${viewMode === 'grid' ? 'bg-indigo-600 text-white' : 'text-zinc-500'}`}
+           >
+             <LayoutGrid size={18} />
+           </button>
+        </div>
+      </div>
 
-      {/* Content Feed */}
-      {viewMode === 'table' ? (
-        <GlassCard className="p-0 overflow-hidden border-white/5">
-          <div className="overflow-x-auto">
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="bg-[#0f0f12]/80 border-b border-white/5">
-                <tr>
-                  <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Asset</th>
-                  <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Author</th>
-                  <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Views</th>
-                  <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Virality</th>
-                  <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Time</th>
-                  <th className="p-4 w-10"></th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-white/5">
-                {filteredItems.map((item) => (
-                  <tr 
-                    key={item.id} 
-                    onClick={() => onVideoClick(item)}
-                    className="hover:bg-white/[0.02] transition-colors cursor-pointer group"
-                  >
-                    <td className="p-4">
-                      <div className="flex items-center gap-3">
-                        <img src={item.thumbnail} className="w-12 h-8 rounded object-cover ring-1 ring-white/10" alt="" />
-                        <div className="max-w-[240px]">
-                          <div className="font-bold text-sm text-zinc-200 truncate group-hover:text-indigo-400 transition-colors">{item.title}</div>
-                          <div className="text-[9px] font-black text-indigo-500/80 uppercase tracking-tighter">{item.platform}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="p-4 text-sm text-zinc-400 font-medium">@{item.author}</td>
-                    <td className="p-4 text-sm text-zinc-300 font-mono text-right">{(item.views / 1000).toFixed(1)}k</td>
-                    <td className="p-4 text-center">
-                      <span className="text-xs font-bold text-zinc-300 bg-white/5 px-2 py-0.5 rounded border border-white/10">
-                        {item.viralityScore}%
-                      </span>
-                    </td>
-                    <td className="p-4 text-[10px] text-zinc-500 text-right font-mono">
-                      {new Date(item.parsedAt).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}
-                    </td>
-                    <td className="p-4 text-zinc-700 group-hover:text-indigo-400">
-                      <ChevronRight size={18} />
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+      {/* Content Container - No fixed height, grows with content */}
+      <div className={`min-h-[200px] ${loading ? 'opacity-50' : ''}`}>
+        {items.length === 0 ? (
+          <GlassCard className="py-20 text-center text-zinc-500 italic">No items found.</GlassCard>
+        ) : viewMode === 'grid' ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+            {items.map((item) => (
+              <GlassCard key={item.id} hoverEffect onClick={() => onVideoClick(item)} className="h-full">
+                <div className="relative aspect-video w-full overflow-hidden bg-zinc-800 rounded-t-2xl">
+                  <img src={item.thumbnail} alt="" className="w-full h-full object-cover" />
+                  <div className="absolute top-2 left-2 px-2 py-1 rounded bg-black/60 text-[10px] font-bold text-white uppercase">{item.platform}</div>
+                </div>
+                <div className="p-4 flex flex-col justify-between h-[120px]">
+                  <h3 className="font-semibold text-zinc-100 line-clamp-2 text-sm">{item.title}</h3>
+                  <div className="flex items-center justify-between pt-2 border-t border-white/5">
+                    <span className="text-xs font-mono text-zinc-400">{(item.views / 1000).toFixed(1)}k views</span>
+                    <span className="text-[10px] font-bold text-indigo-400">{item.viralityScore}%</span>
+                  </div>
+                </div>
+              </GlassCard>
+            ))}
           </div>
-        </GlassCard>
-      ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-           {filteredItems.map(item => (
-             <GlassCard key={item.id} hoverEffect className="group h-full flex flex-col" onClick={() => onVideoClick(item)}>
-               <div className="aspect-video w-full bg-zinc-800 relative overflow-hidden">
-                 <img src={item.thumbnail} className="w-full h-full object-cover opacity-80 group-hover:scale-110 transition-transform duration-500" alt="" />
-                 <div className="absolute top-2 right-2 bg-black/80 px-2 py-1 rounded text-[10px] font-black text-indigo-400 border border-indigo-500/30 backdrop-blur-sm">
-                   {item.viralityScore}% VIRAL
-                 </div>
-               </div>
-               <div className="p-4 flex-1 flex flex-col justify-between">
-                 <h4 className="text-sm font-bold text-white line-clamp-2 group-hover:text-indigo-400 transition-colors leading-tight">{item.title}</h4>
-                 <div className="flex justify-between items-center mt-4">
-                   <span className="text-xs font-semibold text-zinc-500">@{item.author}</span>
-                   <span className="text-[10px] font-mono text-zinc-600">{(item.views/1000).toFixed(1)}k Views</span>
-                 </div>
-               </div>
-             </GlassCard>
-           ))}
+        ) : (
+          <GlassCard className="p-0 overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="w-full text-left">
+                <thead className="bg-white/[0.02] border-b border-white/5">
+                  <tr>
+                    <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest">Asset</th>
+                    <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-right">Views</th>
+                    <th className="p-4 text-[10px] font-bold text-zinc-500 uppercase tracking-widest text-center">Viral Score</th>
+                    <th className="p-4 w-10"></th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-white/5">
+                  {items.map((item) => (
+                    <tr key={item.id} onClick={() => onVideoClick(item)} className="hover:bg-white/[0.02] cursor-pointer group transition-colors">
+                      <td className="p-4">
+                        <div className="flex items-center gap-3">
+                          <img src={item.thumbnail} className="w-14 h-9 rounded-lg object-cover" alt="" />
+                          <div>
+                            <div className="font-bold text-sm text-zinc-200 truncate max-w-xs">{item.title}</div>
+                            <div className="text-[9px] font-black text-indigo-500 uppercase">{item.platform}</div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="p-4 text-sm text-zinc-300 font-mono text-right">{(item.views / 1000).toFixed(1)}k</td>
+                      <td className="p-4 text-center">
+                        <span className="text-xs font-bold text-zinc-400 bg-white/5 px-2 py-1 rounded-lg border border-white/10">
+                          {item.viralityScore}%
+                        </span>
+                      </td>
+                      <td className="p-4 text-zinc-700 group-hover:text-indigo-400 transition-transform group-hover:translate-x-1">
+                        <ChevronRight size={18} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </GlassCard>
+        )}
+      </div>
+
+      {/* Pagination UI - Immediately after the content */}
+      {items.length > 0 && (
+        <div className="flex justify-center items-center gap-6 py-4">
+          <button 
+            disabled={page === 1 || loading}
+            onClick={() => setPage(p => p - 1)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-white/10 text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 transition-all"
+          >
+            <ChevronLeft size={16} /> Prev
+          </button>
+          
+          <div className="flex items-center gap-2">
+            <span className="text-[10px] font-bold text-zinc-500 uppercase">Page</span>
+            <span className="px-3 py-1 rounded-lg bg-indigo-600 text-white font-mono text-sm shadow-lg">{page}</span>
+          </div>
+
+          <button 
+            disabled={items.length < 20 || loading}
+            onClick={() => setPage(p => p + 1)}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-zinc-900 border border-white/10 text-xs font-bold text-zinc-400 hover:text-white disabled:opacity-30 transition-all"
+          >
+            Next <ChevronRight size={16} />
+          </button>
         </div>
       )}
     </div>

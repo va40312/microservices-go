@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react';
 import { Sidebar } from './components/Sidebar';
 import { DashboardView } from './components/DashboardView';
@@ -26,29 +27,27 @@ const MainLayout: React.FC = () => {
 
       <Sidebar activeTab={activeTab} setTab={setActiveTab} />
       
-      {/* Main Content Area - Native browser scrolling for MBP 2014 compatibility */}
       <main className="flex-1 ml-64 relative min-h-screen">
-        
         {/* Sticky Header */}
         <header className="sticky top-0 z-40 bg-[#09090b]/80 backdrop-blur-xl border-b border-white/5 px-8 py-4 flex justify-between items-center">
           <div>
             <h2 className="text-lg font-bold text-white capitalize flex items-center gap-2">
-              {activeTab === 'dashboard' && 'Command Bridge'}
-              {activeTab === 'feed' && 'Trend Workstation'}
+              {activeTab === 'dashboard' && 'Dashboard'}
+              {activeTab === 'feed' && 'Trend Feed'}
             </h2>
             <p className="text-zinc-500 text-[10px] uppercase tracking-wider font-semibold">
-              {activeTab === 'dashboard' ? 'Real-time overview' : 'Parsed data streams'}
+              {activeTab === 'dashboard' ? 'Real-time overview' : 'Data collection'}
             </p>
           </div>
 
           <div className="flex items-center gap-5">
             <div className="flex items-center gap-3 pl-5 border-l border-white/10">
               <div className="text-right hidden sm:block">
-                 <div className="text-sm font-semibold text-white leading-none">{user?.name}</div>
-                 <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter">System Admin</div>
+                 <div className="text-sm font-semibold text-white leading-none">{user?.name || 'User'}</div>
+                 <div className="text-[10px] text-zinc-500 mt-1 uppercase tracking-tighter">Active Session</div>
               </div>
               <img 
-                src={`https://ui-avatars.com/api/?name=${user?.name || 'User'}&background=6366f1&color=fff&bold=true`} 
+                src={`https://ui-avatars.com/api/?name=${user?.name || 'U'}&background=6366f1&color=fff&bold=true`} 
                 alt="Profile" 
                 className="w-9 h-9 rounded-xl border border-white/10 shadow-sm" 
               />
@@ -56,7 +55,7 @@ const MainLayout: React.FC = () => {
                 onClick={logout}
                 className="ml-2 text-xs font-bold text-zinc-500 hover:text-red-400 transition-all duration-200"
               >
-                Sign Out
+                Log out
               </button>
             </div>
           </div>
@@ -74,7 +73,7 @@ const MainLayout: React.FC = () => {
         </div>
       </main>
 
-      {/* The Modal */}
+      {/* Detail Modal */}
       {selectedVideo && (
         <VideoDetailModal 
           video={selectedVideo} 

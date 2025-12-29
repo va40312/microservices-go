@@ -1,13 +1,13 @@
+
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { User } from '../types';
-import { loginUser, registerUser } from '../services/auth';
+import { loginUser } from '../services/auth';
 
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   login: (e: string, p: string) => Promise<void>;
-  register: (e: string, p: string) => Promise<void>;
   logout: () => void;
 }
 
@@ -17,7 +17,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
-  // Check local storage on mount to persist session
   useEffect(() => {
     const storedUser = localStorage.getItem('trendpulse_user');
     if (storedUser) {
@@ -36,17 +35,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
-  const register = async (email: string, pass: string) => {
-    setIsLoading(true);
-    try {
-      const userData = await registerUser(email, pass);
-      setUser(userData);
-      localStorage.setItem('trendpulse_user', JSON.stringify(userData));
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
   const logout = () => {
     setUser(null);
     localStorage.removeItem('trendpulse_user');
@@ -58,7 +46,6 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
       isAuthenticated: !!user, 
       isLoading, 
       login, 
-      register, 
       logout 
     }}>
       {children}
