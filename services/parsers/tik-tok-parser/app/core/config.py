@@ -2,7 +2,6 @@
 import os
 from dotenv import load_dotenv
 
-# Загружаем переменные из .env файла (особенно полезно для локальной разработки)
 load_dotenv()
 
 # Настройки Kafka

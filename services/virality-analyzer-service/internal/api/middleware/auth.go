@@ -15,17 +15,13 @@ func InternalAuthMiddleware() gin.HandlerFunc {
 	}
 
 	return func(c *gin.Context) {
-		// Получаем ключ из заголовка запроса
 		providedKey := c.GetHeader("X-Internal-API-Key")
 
-		// Сравниваем
 		if providedKey != requiredKey {
-			// Если ключи не совпадают - отлуп!
 			c.AbortWithStatusJSON(http.StatusForbidden, gin.H{"error": "Forbidden"})
-			return // Прерываем дальнейшую обработку
+			return
 		}
 
-		// Если все ок, пропускаем запрос дальше к хендлеру
 		c.Next()
 	}
 }

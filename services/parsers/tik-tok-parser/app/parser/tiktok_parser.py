@@ -18,6 +18,11 @@ async def get_trending_videos(count: int):
 
             # Асинхронно итерируемся по видео
             async for video in api.trending.videos(count=count):
+                video_data = video.as_dict
+                if not video_data.get("id") or "liveRoomInfo" in video_data:
+                    print(f"⚠️ Пропуск элемента: это LIVE-трансляция или пустой объект.")
+                    continue
+
                 video_list.append(video.as_dict)
 
     except Exception as e:

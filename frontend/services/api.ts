@@ -5,9 +5,6 @@ import { ContentItem, DashboardData, HistoryPoint, Platform } from '../types';
 const USE_MOCKS = false;
 const API_BASE_URL = 'http://localhost:8000/api/v1';
 
-/**
- * Маппинг VideoInList (из OpenAPI) в ContentItem (для UI)
- */
 const mapBackendToFrontend = (data: any): ContentItem => {
   const stats = data.stats || {};
   const metrics = data.metrics || {};

@@ -16,7 +16,6 @@ class VideoMetrics(BaseModel):
     virality_score: int
     engagement_rate: float
 
-# --- Модель для списка видео (Trend Feed и Leaderboard) ---
 class VideoInList(BaseModel):
     id: str = Field(..., alias="_id")
     author: Author

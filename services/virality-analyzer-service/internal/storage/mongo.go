@@ -14,7 +14,6 @@ import (
 	"go.mongodb.org/mongo-driver/mongo/options"
 )
 
-// SnapshotRepository - интерфейс оставляем без изменений
 type SnapshotRepository interface {
 	SaveSnapshot(ctx context.Context, msg *domain.SocialMediaMessage) error
 	GetTrendingVideos(ctx context.Context, params GetTrendingParams) ([]bson.M, int64, error)
@@ -35,7 +34,6 @@ type GetTrendingParams struct {
 	Limit    int64
 }
 
-// NewMongoRepository - конструктор теперь принимает клиент Mongo
 func NewMongoRepository(client *mongo.Client) SnapshotRepository {
 	return &mongoRepository{
 		client:   client,
@@ -43,7 +41,6 @@ func NewMongoRepository(client *mongo.Client) SnapshotRepository {
 	}
 }
 
-// SaveSnapshot - реализация сохранения в MongoDB
 func (r *mongoRepository) SaveSnapshot(ctx context.Context, msg *domain.SocialMediaMessage) error {
 	if msg.DataType != "video" {
 		return nil
@@ -63,7 +60,6 @@ func (r *mongoRepository) SaveSnapshot(ctx context.Context, msg *domain.SocialMe
 		viralityScore = 100
 	}
 
-	// --- 2. ОБНОВЛЯЕМ (или создаем) запись в коллекции `videos` ---
 	videosCollection := r.client.Database(r.database).Collection("videos")
 	opts := options.Update().SetUpsert(true)
 	filter := bson.M{"_id": p.PlatformID}
@@ -113,7 +109,6 @@ func (r *mongoRepository) SaveSnapshot(ctx context.Context, msg *domain.SocialMe
 	return nil
 }
 
-// ConnectToDBWithRetry - логика подключения адаптирована под Mongo
 func ConnectToDBWithRetry(ctx context.Context, connectionString string) (*mongo.Client, error) {
 	maxRetries := 10
 	baseRetryInterval := 1 * time.Second
@@ -123,12 +118,10 @@ func ConnectToDBWithRetry(ctx context.Context, connectionString string) (*mongo.
 	var err error
 
 	for i := 0; i < maxRetries; i++ {
-		// Создаем клиент
 		clientOptions := options.Client().ApplyURI(connectionString)
 		client, err = mongo.Connect(ctx, clientOptions)
 
 		if err == nil {
-			// Пингуем базу, чтобы убедиться, что соединение реально есть
 			err = client.Ping(ctx, nil)
 			if err == nil {
 				log.Println("Успешное подключение к MongoDB!")
@@ -150,17 +143,14 @@ func ConnectToDBWithRetry(ctx context.Context, connectionString string) (*mongo.
 }
 
 func (r *mongoRepository) GetTrendingVideos(ctx context.Context, params GetTrendingParams) ([]bson.M, int64, error) {
-	// --- ТЕПЕРЬ МЫ ЧИТАЕМ ИЗ `videos` ---
 	collection := r.client.Database(r.database).Collection("videos")
 
-	// 1. Строим фильтр (почти без изменений)
 	filter := bson.D{}
 	if params.Platform != "" {
 		// Поле в `videos` называется `source`
 		filter = append(filter, bson.E{Key: "source", Value: params.Platform})
 	}
 
-	// 2. Строим сортировку (пути к полям поменялись!)
 	sortOptions := bson.D{}
 	switch params.SortBy {
 	case "most_viewed":
@@ -170,11 +160,9 @@ func (r *mongoRepository) GetTrendingVideos(ctx context.Context, params GetTrend
 	case "newest":
 		sortOptions = bson.D{{"published_at", -1}}
 	default:
-		// По умолчанию сортируем по времени последнего обновления
 		sortOptions = bson.D{{"last_updated", -1}}
 	}
 
-	// 3. Пагинация (без изменений)
 	skip := (params.Page - 1) * params.Limit
 	limit := params.Limit
 
@@ -183,7 +171,6 @@ func (r *mongoRepository) GetTrendingVideos(ctx context.Context, params GetTrend
 		SetSkip(skip).
 		SetLimit(limit)
 
-	// --- НИКАКОГО ПАЙПЛАЙНА! ПРОСТОЙ FIND() ---
 	cursor, err := collection.Find(ctx, filter, findOptions)
 	if err != nil {
 		return nil, 0, err
@@ -194,7 +181,6 @@ func (r *mongoRepository) GetTrendingVideos(ctx context.Context, params GetTrend
 		return nil, 0, err
 	}
 
-	// Считаем общее количество документов в коллекции `videos` для пагинации
 	total, _ := collection.CountDocuments(ctx, filter)
 
 	return results, total, nil

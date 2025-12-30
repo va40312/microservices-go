@@ -52,7 +52,6 @@ services:
     container_name: mongodb
     restart: unless-stopped
     ports:
-      # Пробрасываем порт, чтобы ты мог подключиться через Compass/DataGrip
       - "27017:27017"
     environment:
       MONGO_INITDB_ROOT_USERNAME: admin

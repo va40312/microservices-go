@@ -5,7 +5,6 @@ def format_tiktok_message(video_data: dict) -> dict:
     # Основные объекты
     stats = video_data.get('stats', {})
     author = video_data.get('author', {})
-    music = video_data.get('music', {})
     video_info = video_data.get('video', {})
     author_stats = video_data.get('authorStats', {})
 

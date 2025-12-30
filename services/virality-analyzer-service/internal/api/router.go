@@ -9,16 +9,13 @@ import (
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
-// SetupRouter - функция, которая создает и настраивает роутер
 func SetupRouter(client *mongo.Client, repo storage.SnapshotRepository) *gin.Engine {
 	r := gin.Default()
 	r.SetTrustedProxies(nil)
 	//gin.SetMode(gin.ReleaseMode)
 
-	// Создаем экземпляр нашего хендлера, передавая ему подключение к БД
 	dashboardHandler := handlers.NewDashboardHandler(client, repo)
 
-	// Группа для внутренних API
 	internal := r.Group("/internal", middleware.InternalAuthMiddleware())
 	{
 		internal.GET("/trending", dashboardHandler.GetTrending)
@@ -27,7 +24,6 @@ func SetupRouter(client *mongo.Client, repo storage.SnapshotRepository) *gin.Eng
 		internal.GET("/video/:videoID/trajectory", dashboardHandler.GetVideoTrajectory)
 	}
 
-	// Ручка для проверки здоровья
 	r.GET("/health", func(c *gin.Context) {
 		c.JSON(200, gin.H{"status": "ok"})
 	})

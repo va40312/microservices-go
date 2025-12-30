@@ -8,14 +8,14 @@ import (
 	"time"
 
 	"virality-analyzer-service/internal/domain"
-	"virality-analyzer-service/internal/storage" // <-- Импортируем наш репозиторий
+	"virality-analyzer-service/internal/storage"
 
 	"github.com/segmentio/kafka-go"
 )
 
 type MessageConsumer struct {
 	reader     *kafka.Reader
-	repository storage.SnapshotRepository // <-- Зависимость от интерфейса, а не от конкретной БД!
+	repository storage.SnapshotRepository
 }
 
 func NewMessageConsumer(brokers []string, topic string, repo storage.SnapshotRepository) *MessageConsumer {
@@ -30,7 +30,6 @@ func NewMessageConsumer(brokers []string, topic string, repo storage.SnapshotRep
 	}
 }
 
-// Run запускает бесконечный цикл прослушивания сообщений.
 func (c *MessageConsumer) Run(ctx context.Context) {
 	defer c.reader.Close()
 	log.Println("Консьюмер запущен, ожидание сообщений...")
@@ -48,10 +47,8 @@ func (c *MessageConsumer) Run(ctx context.Context) {
 			continue
 		}
 
-		// Используем репозиторий для сохранения, не зная, какая там внутри БД.
 		if err := c.repository.SaveSnapshot(ctx, &message); err != nil {
 			log.Printf("Ошибка обработки сообщения: %v", err)
-			// Здесь можно добавить логику повторов или отправки в DLQ (Dead Letter Queue)
 		}
 	}
 }
@@ -59,8 +56,6 @@ func (c *MessageConsumer) Run(ctx context.Context) {
 func CheckKafkaConnection(ctx context.Context, brokers []string, topic string) error {
 	log.Println("Проверка соединения с Kafka...")
 
-	// Попытаемся подключиться к каждому брокеру по очереди.
-	// Если хотя бы один ответит и подтвердит наличие топика, считаем проверку успешной.
 	for _, broker := range brokers {
 		// kafka.DialLeader - это низкоуровневый способ установить соединение
 		// с лидером партиции для конкретного топика.
@@ -77,13 +72,11 @@ func CheckKafkaConnection(ctx context.Context, brokers []string, topic string) e
 			continue
 		}
 
-		// Важно закрыть соединение после проверки
 		defer conn.Close()
 
 		// Теперь, когда соединение с брокером есть, спросим у него про наш топик.
 		partitions, err := conn.ReadPartitions(topic)
 		if err != nil {
-			// Это может означать, что топик не существует, или другие проблемы
 			return fmt.Errorf("не удалось получить информацию о топике '%s' от брокера %s: %w", topic, broker, err)
 		}
 
@@ -92,11 +85,9 @@ func CheckKafkaConnection(ctx context.Context, brokers []string, topic string) e
 			return fmt.Errorf("топик '%s' существует на брокере %s, но у него нет партиций", topic, broker)
 		}
 
-		// Успех! Мы подключились к брокеру и убедились, что топик существует.
 		log.Printf("Успешное соединение с брокером Kafka: %s. Топик '%s' найден.", broker, topic)
-		return nil // Выходим из функции с результатом "успех"
+		return nil
 	}
 
-	// Если мы прошли весь цикл и не смогли подключиться ни к одному брокеру
 	return fmt.Errorf("не удалось подключиться ни к одному из указанных Kafka-брокеров")
 }

@@ -9,7 +9,6 @@ from app.core.config import settings
 
 class AnalyzerService:
     def __init__(self):
-        # "Секретное рукопожатие"
         self.headers = {"X-Internal-API-Key": settings.internal_api_key}
 
     async def get_dashboard_data(self) -> Dict[str, Any]:
@@ -22,29 +21,23 @@ class AnalyzerService:
             return json.loads(cached)
 
         try:
-            # Магия asyncio.gather: запускает оба запроса одновременно
             stats_resp_task = http_client.get("/internal/stats", headers=self.headers)
             leaderboard_resp_task = http_client.get("/internal/leaderboard", headers=self.headers)
 
-            # Ждем, пока оба завершатся
             stats_resp, leaderboard_resp = await asyncio.gather(stats_resp_task, leaderboard_resp_task)
 
-            # Проверяем, что оба запроса успешны
             stats_resp.raise_for_status()
             leaderboard_resp.raise_for_status()
 
-            # Собираем ответ
             data = {
                 "stats": stats_resp.json(),
                 "leaderboard": leaderboard_resp.json()
             }
 
-            # Кэшируем
             await redis_client.set(cache_key, json.dumps(data), ex=30)
             return data
 
         except Exception as e:
-            # Обрабатываем ошибки сети или ответа от Go-сервиса
             raise HTTPException(status_code=503, detail=f"Analyzer service unavailable: {e}")
 
     async def get_trending_videos(self, sort_by: str, platform: str | None, page: int, limit: int) -> Dict[str, Any]:
@@ -87,6 +80,4 @@ class AnalyzerService:
         except Exception as e:
             raise HTTPException(status_code=503, detail=f"Analyzer service unavailable: {e}")
 
-
-# Создаем экземпляр
 analyzer_service = AnalyzerService()

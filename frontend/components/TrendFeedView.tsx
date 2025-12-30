@@ -20,11 +20,9 @@ export const TrendFeedView: React.FC<TrendFeedProps> = ({ onVideoClick }) => {
 
   const loadData = () => {
     setLoading(true);
-    
-    // Бэкенд ожидает lowercase (tiktok, youtube)
+
     let platformParam: string | null = null;
     if (platformFilter !== 'All') {
-      // Извлекаем только название платформы и в нижний регистр
       platformParam = platformFilter.split(' ')[0].toLowerCase();
     }
 

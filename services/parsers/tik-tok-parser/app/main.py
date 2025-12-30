@@ -20,6 +20,10 @@ def run_parser_cycle(producer: MediaContentProducer):
 
     for video_data in videos:
         message = format_tiktok_message(video_data)
+        if not message.get("payload", {}).get("platform_id"):
+            print(f"⚠️ Пропуск отформатированного сообщения: пустой platform_id.")
+            continue
+
         producer.send_message(config.KAFKA_TOPIC, message)
 
     producer.flush()

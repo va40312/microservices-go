@@ -34,11 +34,8 @@ func main() {
 		log.Fatalf("Критическая ошибка: проверка Kafka не пройдена: %v", err)
 	}
 
-	// Сборка компонентов (Dependency Injection)
-	// Создаем репозиторий, передавая ему пул соединений
 	repo := storage.NewMongoRepository(mongoClient)
 
-	// Создаем консьюмер, передавая ему репозиторий
 	kafkaConsumer := consumer.NewMessageConsumer(cfg.KafkaBrokers, cfg.KafkaTopic, repo)
 
 	// Запуск kafka в фоне

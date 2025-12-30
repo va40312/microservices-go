@@ -17,8 +17,6 @@ type AppConfig struct {
 
 func LoadConfig() (*AppConfig, error) {
 	if err := godotenv.Load(); err != nil {
-		// если файл есть ошибка, программа может работать .env
-		// может быть задано через env самой os или path
 		if !os.IsNotExist(err) {
 			return nil, fmt.Errorf("ошибка при чтении .env файла: %w", err)
 		}
